@@ -196,8 +196,8 @@ class FanController(object):
 
             # check temperatures
             for device in self.devices:
-                # device.get_temp()
-                outputs.append(device.get_output(device.get_temp()))
+                device.get_temp()
+                outputs.append(device.get_output(device.temp))
                 names.append(device.nice_name)
 
             # returns the index of the _highest output_, which is used to command the fan
