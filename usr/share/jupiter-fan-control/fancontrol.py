@@ -82,22 +82,21 @@ class Fan(object):
             f.write(str(0))
 #zones define special actions 
 class Zones(object):
-    def __init__(self, config, debug=False):
+    def __init__(self, config, debug = False) -> None:
         self.debug = debug
-
         self.zones = config
-        self.currentZone = "Zone_cold"    
+        self.currentZone = "Zone_cold"
         self.loop_interval = 1
 
-    def checkZone(self, temperatue):
-        for zone in self.zones:
-            if zone["temp_min"] < temperature and zone["temp_max"] > temperature:
-                self.zone["state"] = True
+    def checkZone(self, temperature):
+        for i, zone in enumerate(self.zones):
+            if zone["min_temp"] < temperature and zone["max_temp"] > temperature:
+                self.zones[i]["state"] = True
                 self.currentZone = zone["name"]
                 self.loop_interval = zone["loop_interval"]
             else:
-                self.zone ["state"] =False
-            if debug:
+                self.zones[i]["state"] = False
+            if self.debug:
                 print( "Zone {}: State: {}".format(zone["name"], zone["state"])  )
         return self.loop_interval
    
