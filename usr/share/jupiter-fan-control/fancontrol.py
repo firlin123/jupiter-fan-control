@@ -92,12 +92,14 @@ class Zones(object):
         for i, zone in enumerate(self.zones):
             if zone["min_temp"] < temperature and zone["max_temp"] > temperature:
                 self.zones[i]["state"] = True
+                if self.debug and self.currentZone not in zone["name"]:
+                    print("Zone Change from {} to {}".format(self.currentZone, zone["name"]))
                 self.currentZone = zone["name"]
                 self.loop_interval = zone["loop_interval"]
             else:
                 self.zones[i]["state"] = False
-            if self.debug:
-                print( "Zone {}: State: {}".format(zone["name"], zone["state"])  )
+            #if self.debug:
+            #    print( "Zone {}: State: {}".format(zone["name"], zone["state"])  )
         return self.loop_interval
    
             
@@ -187,7 +189,10 @@ class FanController(object):
     def print_single(self, source_name):
         for device in self.devices:
             if self.debug:
-                print("{}: {}/{}/{}    PID:{:.0f} {:.0f} {:.0f}   ".format(device.nice_name, device.temp, device.pid.SetPoint, device.max_temp, device.pid.PTerm, device.pid.Ki * device.pid.ITerm, device.pid.Kd * device.pid.DTerm), end = '')
+                if "pid" in device.type:
+                    print("{}: {}/{}/{}    PID:{:.0f} {:.0f} {:.0f}   ".format(device.nice_name, device.temp, device.controller.SetPoint, device.max_temp, device.controller.PTerm, device.controller.Ki * device.controller.ITerm, device.controller.Kd * device.controller.DTerm), end = '')
+                else:
+                    print("{}: {:.1f}/{:.0f}  ".format(device.nice_name, device.temp, device.controller.output), end = '')
             else:
                 print("{}: {:.1f}/{:.0f}  ".format(device.nice_name, device.temp, device.controller.output), end = '')
                 #print("{}: {}  ".format(device.nice_name, device.temp), end = '')
@@ -256,23 +261,9 @@ if __name__ == '__main__':
     
     
     # initialize controller
-    controller = FanController(debug = False, config_file = config_file_path)
+    controller = FanController(debug = True, config_file = config_file_path)
 
     # start main loop
     controller.loop_control()
     
     print('jupiter-fan-control startup complete')
-#!/usr/bin/python -u
-import signal
-import time
-import math
-import yaml
-import os
-from PID import PID
-
-# quadratic function RPM = AT^2 + BT + X
-class Quadratic(object):
-    def __init__(self, A, B, C, T_threshold ):
-        self.A = A
-        self.B = B
-        self.C = C
