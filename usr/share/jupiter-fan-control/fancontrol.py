@@ -54,6 +54,8 @@ class Fan(object):
     def take_control_from_ec(self):
         with open(self.fan_path + "gain", 'w') as f:
             f.write(str(0))
+        with open(self.fan_path + "ramp_rate", 'w') as f:
+            f.write(str(254))
         with open(self.fan_path + "recalculate", 'w') as f:
             f.write(str(1))
 
@@ -78,6 +80,28 @@ class Fan(object):
             f.write(str(10))
         with open(self.fan_path + "recalculate", 'w') as f:
             f.write(str(0))
+#zones define special actions 
+class Zones(object):
+    def __init__(self, config, debug=False):
+        self.debug = debug
+
+        self.zones = config
+        self.currentZone = "Zone_cold"    
+        self.loop_interval = 1
+
+    def checkZone(self, temperatue):
+        for zone in self.zones:
+            if zone["temp_min"] < temperature and zone["temp_max"] > temperature:
+                self.zone["state"] = True
+                self.currentZone = zone["name"]
+                self.loop_interval = zone["loop_interval"]
+            else:
+                self.zone ["state"] =False
+            if debug:
+                print( "Zone {}: State: {}".format(zone["name"], zone["state"])  )
+        return self.loop_interval
+   
+            
 
 # devices are sources of heat - CPU, GPU, etc.
 class Device(object):
@@ -146,9 +170,12 @@ class FanController(object):
         # store global parameters
         self.base_hwmon_path = self.config["base_hwmon_path"]
         self.loop_interval = self.config["loop_interval"]
+        #self.loop_interval = self.loop_interval_max
+        #self.loop_interval_min = self.config["loop_interval_min"]
 
         # initialize list of devices
         self.devices = [ Device(self.base_hwmon_path, device_config, self.debug) for device_config in self.config["devices"] ]
+        self.zones = Zones(self.config["zones"], self.debug)
 
         # initialize fan
         fan_path = get_full_path(self.base_hwmon_path, self.config["fan_hwmon_name"])
@@ -173,6 +200,7 @@ class FanController(object):
             start_time = time.time()
             outputs = []
             names = []
+            temps = []
 
             # names = ( [device.nice_name for device in self.devices] ) if want to move to tuples for perf
 
@@ -185,6 +213,7 @@ class FanController(object):
                 device.get_temp()
                 outputs.append(device.get_output(device.control_temp))
                 names.append(device.nice_name)
+                temps.append(device.temp)
 
             if "max" in outputs: # check if any devices were overtemp
                 source_index = outputs.index("max")
@@ -195,7 +224,8 @@ class FanController(object):
                 source_index = max(range(len(outputs)), key=outputs.__getitem__) 
                 # set fan speed to output
                 self.fan.set_speed(outputs[source_index])
-
+                
+            self.loop_interval = self.zones.checkZone(max(temps))
             # record the name of the device that gave the highest output
             source_name = names[source_index]
 
@@ -221,8 +251,11 @@ if __name__ == '__main__':
 
     # specify config file path
     # config_file_path = os.getcwd() + "/config.yaml"
+
     config_file_path = "/usr/share/jupiter-fan-control/jupiter-fan-control-config.yaml"
 
+    
+    
     # initialize controller
     controller = FanController(debug = False, config_file = config_file_path)
 
@@ -230,3 +263,17 @@ if __name__ == '__main__':
     controller.loop_control()
     
     print('jupiter-fan-control startup complete')
+#!/usr/bin/python -u
+import signal
+import time
+import math
+import yaml
+import os
+from PID import PID
+
+# quadratic function RPM = AT^2 + BT + X
+class Quadratic(object):
+    def __init__(self, A, B, C, T_threshold ):
+        self.A = A
+        self.B = B
+        self.C = C

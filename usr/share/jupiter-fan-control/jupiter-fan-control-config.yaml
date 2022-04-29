@@ -1,6 +1,7 @@
 # config file for juputer-fan-control.service
 
-loop_interval: 0.5
+loop_interval: 1
+loop_interval_min: 0.1
 base_hwmon_path: "/sys/class/hwmon/"
 
 fan_hwmon_name: jupiter
@@ -8,6 +9,27 @@ fan_min_speed: 10
 fan_threshold_speed: 1500
 fan_max_speed: 7300
 
+zones:
+  - name: Zone_cold
+    min_temp: -99.0
+    max_temp: 40
+    loop_interval: 1
+
+  - name: Zone_room
+    min_temp: 40
+    max_temp: 60
+    loop_interval: 0.5
+
+  - name: Zone_warm
+    min_temp: 60
+    max_temp: 70
+    loop_interval: 0.2
+
+  - name: Zone_hot
+    min_temp: 70
+    max_temp: 99
+    loop_interval: 0.1
+    
 devices:
   - hwmon_name: acpitz
     nice_name: CPU
