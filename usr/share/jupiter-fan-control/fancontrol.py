@@ -90,6 +90,9 @@ class Device(object):
         self.temp_deadzone = config["temp_deadzone"]
         self.temp = 0
         self.control_temp = 0 
+        self.outputs = []
+        self.buffer_full = False
+        self.n_sample_avg = 10
         self.type = config["type"]
         if self.type == "pid":
             self.bandwidth = config["bandwidth"]
@@ -115,11 +118,21 @@ class Device(object):
 
     # returns PID control output, or MAX
     def get_output(self, temp_input):
-        output = self.controller.update(temp_input)
+        self.output = self.controller.update(temp_input)
         if(temp_input > self.max_temp):
-            return "max"
+            self.output = 7300 # "max"
         else:
-            return max(output, 0)
+            self.output = max(self.output, 0)
+
+        self.outputs.append(self.output)
+        if self.buffer_full:
+            self.outputs.pop(0)
+        elif len(self.outputs) >= self.n_sample_avg:
+            self.buffer_full = True
+        self.output = math.fsum(self.outputs) / len(self.outputs)
+        # self.output = max(self.outputs)
+        return self.output
+
 
 # helper function to find correct hwmon* path for a given device name
 def get_full_path(base_path, name):
@@ -164,7 +177,7 @@ class FanController(object):
             if self.debug:
                 print("{}: {}/{}/{}    PID:{:.0f} {:.0f} {:.0f}   ".format(device.nice_name, device.temp, device.pid.SetPoint, device.max_temp, device.pid.PTerm, device.pid.Ki * device.pid.ITerm, device.pid.Kd * device.pid.DTerm), end = '')
             else:
-                print("{}: {:.1f}/{:.0f}  ".format(device.nice_name, device.temp, device.controller.output), end = '')
+                print("{}: {:.1f}/{:.0f}  ".format(device.nice_name, device.temp, device.output), end = '')
                 #print("{}: {}  ".format(device.nice_name, device.temp), end = '')
         print("Fan[{}]: {}/{}".format(source_name, self.fan.fc_speed, self.fan.measured_speed))
 
@@ -183,19 +196,14 @@ class FanController(object):
 
             # check temperatures
             for device in self.devices:
-                device.get_temp()
-                outputs.append(device.get_output(device.control_temp))
+                # device.get_temp()
+                outputs.append(device.get_output(device.get_temp()))
                 names.append(device.nice_name)
 
-            if "max" in outputs: # check if any devices were overtemp
-                source_index = outputs.index("max")
-                # set fan speed to max_speed
-                self.fan.set_speed(self.fan.max_speed)
-            else:
-                # returns the index of the _highest output_, which is used to command the fan
-                source_index = max(range(len(outputs)), key=outputs.__getitem__) 
-                # set fan speed to output
-                self.fan.set_speed(outputs[source_index])
+            # returns the index of the _highest output_, which is used to command the fan
+            source_index = max(range(len(outputs)), key=outputs.__getitem__) 
+            # set fan speed to output
+            self.fan.set_speed(outputs[source_index])
 
             # record the name of the device that gave the highest output
             source_name = names[source_index]
