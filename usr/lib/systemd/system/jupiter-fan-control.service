@@ -5,8 +5,8 @@ Description=Jupiter fan control
 Type=simple
 ExecStart=/usr/share/jupiter-fan-control/fancontrol.py
 # disable debug journal logging
-StandardOutput=file:/var/log/fanControl.log
-StandardError=append:/var/log/fanControl.log
+StandardOutput=append:/home/deck/.share/fanControl.log
+StandardError=append:/home/deck/.share/fanControl.log
 
 # disable buffering so STDOUT and STDERR show up immediately in logs
 Environment=PYTHONUNBUFFERED=1
