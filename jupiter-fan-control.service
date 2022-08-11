@@ -6,7 +6,7 @@ Type=simple
 #StandardOutput=null
 
 ExecStart=/usr/share/jupiter-fan-control/fancontrol.py --run
-ExecStopPost=/usr/share/jupiter-fan-control/fancontrol.py --stop 
+ExecStopPost=/usr/share/jupiter-fan-control/fancontrol.py --exit 
 
 # disable buffering so STDOUT and STDERR show up immediately in logs
 Environment=PYTHONUNBUFFERED=1
