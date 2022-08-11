@@ -1,1 +1,2 @@
 #!/bin/bash
+journalctl -u jupiter-fan-control -f -o cat
