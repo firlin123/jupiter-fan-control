@@ -21,7 +21,7 @@ sensors:
 devices:
   - hwmon_name: acpitz
     nice_name: CPU
-    max_temp: 95
+    max_temp: 90
     temp_deadzone: 2
     file: temp1_input
     type: ffquad
@@ -56,18 +56,20 @@ devices:
   #   C: 5457
   #   T_threshold: 55
   #   # quadratic fit {{55, 2000}, {80, 5000}, {90, 7000}}
+  
+  - hwmon_name: amdgpu
+    nice_name: GPU
+    max_temp: 90
+    temp_deadzone: 2
+    file: temp1_input
+    type: limit
 
   - hwmon_name: jupiter
     nice_name: BAT
     max_temp: 50
     temp_deadzone: 3
     file: temp1_input
-    type: pid
-    T_setpoint: 0
-    Kp: 0
-    Ki: 0 
-    Kd: 0
-    windup_limit: 0
+    type: limit
 
   - hwmon_name: nvme
     nice_name: SSD

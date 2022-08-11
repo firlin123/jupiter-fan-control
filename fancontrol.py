@@ -9,6 +9,16 @@ import math
 import yaml
 from PID import PID
 
+class Limit():
+    '''temp limit function controller'''
+    def __init__(self) -> None:
+        '''constructor'''
+        self.output = 0
+    
+    def update(self, temp_input, _) -> int:
+        '''update output'''
+        return self.output
+
 # quadratic function RPM = AT^2 + BT + C
 class Quadratic():
     '''quadratic function controller'''
@@ -239,6 +249,8 @@ class Device():
             self.controller = PID(float(config["Kp"]), float(config["Ki"]), float(config["Kd"]))  
             self.controller.SetPoint = config["T_setpoint"]
             self.controller.setWindup(config["windup_limit"]) # windup limits the I term of the output
+        elif self.type ==  "limit":
+            self.controller = Limit()
         elif self.type ==  "quadratic":
             self.controller = Quadratic(float(config["A"]), float(config["B"]), float(config["C"]), float(config["T_threshold"]))
         elif self.type == "feedforward":
@@ -396,7 +408,8 @@ class FanController():
 # main
 if __name__ == '__main__':
     # specify config file path
-    CONFIG_FILE_PATH = "/usr/share/jupiter-fan-control/jupiter-fan-control-config.yaml"
+    DEFAULT_CONFIG = 'jupiter-fan-control-config.yaml'
+    CONFIG_FILE_PATH = f"/usr/share/jupiter-fan-control/{DEFAULT_CONFIG}"
     controller = FanController(debug = False, config_file = CONFIG_FILE_PATH)
 
     args = sys.argv
