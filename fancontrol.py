@@ -1,12 +1,13 @@
 #!/usr/bin/python -u
 """jupiter-fan-controller"""
 import signal
+import argparse
 import os
 import sys
 import subprocess
 import time
 import math
-import yaml
+# import yaml
 from PID import PID
 
 class Limit():
@@ -399,6 +400,24 @@ class FanController():
             # print all values
             self.print_single(source_name)
 
+    def loop_dry(self):
+        '''dry run control loop'''
+        print("jupiter-fan-control dry run ...")
+        while True:
+            # read device temps and power sensor
+            for _ in range(self.control_loop_ratio):
+                self.loop_read_sensors()
+            # read charge state
+            self.fan.get_charge_state()
+            for device in self.devices:
+                device.get_output(device.avg_control_temp, self.power_sensor.avg_value)
+            max_output = max(device.control_output for device in self.devices)
+            # self.fan.set_speed(max_output)
+            # find source name for the max control output
+            source_name = next(device for device in self.devices if device.control_output == max_output).nice_name
+            # print all values
+            self.print_single(source_name)
+
     def on_exit(self, signum, frame):
         '''exit handler'''
         self.fan.return_to_ec_control()
@@ -409,14 +428,22 @@ class FanController():
 if __name__ == '__main__':
     # specify config file path
     DEFAULT_CONFIG = 'jupiter-fan-control-config.yaml'
-    CONFIG_FILE_PATH = f"/usr/share/jupiter-fan-control/{DEFAULT_CONFIG}"
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-r", "--run", help="run the control loop", action="store_true")
+    parser.add_argument("-d", "--dryrun", help="dry run the control loop", action="store_true")
+    parser.add_argument("-x", "--exit", help="exit and return to EC fan control", action="store_true")
+    parser.add_argument("-c", "--config", help="config file path", type=str, default=DEFAULT_CONFIG)
+    args = parser.parse_args()
+
+    CONFIG_FILE_PATH = f"/usr/share/jupiter-fan-control/{args.config}"
     controller = FanController(debug = False, config_file = CONFIG_FILE_PATH)
 
-    args = sys.argv
-    if len(args) == 2:
-        command = args[1]
-        if command == "--run":
-            controller.loop_control()
-            
-    # otherwise, exit cleanly
-    controller.on_exit(None, None)
+    if args.run:
+        controller.loop_control()
+    elif args.dryrun:
+        controller.loop_dry()
+    elif args.exit:
+        controller.on_exit(None, None)
+    else:
+        controller.on_exit(None, None)
