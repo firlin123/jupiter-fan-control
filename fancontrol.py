@@ -403,6 +403,7 @@ class FanController():
     def loop_dry(self):
         '''dry run control loop'''
         print("jupiter-fan-control dry run ...")
+        self.fan.return_to_ec_control()
         while True:
             # read device temps and power sensor
             for _ in range(self.control_loop_ratio):
@@ -413,6 +414,7 @@ class FanController():
                 device.get_output(device.avg_control_temp, self.power_sensor.avg_value)
             max_output = max(device.control_output for device in self.devices)
             # self.fan.set_speed(max_output)
+            self.fan.fc_speed = max_output
             # find source name for the max control output
             source_name = next(device for device in self.devices if device.control_output == max_output).nice_name
             # print all values
