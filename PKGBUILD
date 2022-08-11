@@ -16,9 +16,11 @@ package() {
     "${srcdir}"/fancontrol.py \
     "${srcdir}"/PID.py \
     "${srcdir}"/jupiter-fan-control-config.yaml \
-    "${srcdir}"/jfc-static-config.yaml
+    "${srcdir}"/quiet.yaml \
+    "${srcdir}"/stable.yaml
 }
 sha256sums=('SKIP'
+            'SKIP'
             'SKIP'
             'SKIP'
             'SKIP'
