@@ -7,7 +7,7 @@ import sys
 import subprocess
 import time
 import math
-# import yaml
+import yaml
 from PID import PID
 
 class Limit():
